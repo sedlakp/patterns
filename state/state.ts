@@ -1,6 +1,6 @@
 const OPTIONS = ["dog", "cat", "bird", "panda"];
 
-class FortuneImageMachine implements FortuneImageMachineInterface {
+export class FortuneImageMachine implements FortuneImageMachineInterface {
   hasTicketState: FortuneImageMachineState;
   noTicketState: FortuneImageMachineState;
   optionSelectedState: FortuneImageMachineState;
@@ -21,19 +21,18 @@ class FortuneImageMachine implements FortuneImageMachineInterface {
 
   tickets: number = 0;
 
-  selectOption(option: string): void {
-    this.state.selectOption(option);
+  selectOption(option: string): string {
+    return this.state.selectOption(option);
   }
-  addTicket(): void {
-    this.state.addTicket();
+  addTicket(): string {
+    return this.state.addTicket();
   }
-  pushButton(): void {
-    this.state.pushButton();
-    this.getFortuneImage();
+  pushButton(): string {
+    return this.state.pushButton();
   }
 
-  getFortuneImage(): void {
-    this.state.getFortuneImage();
+  getFortuneImage(): Promise<string> {
+    return this.state.getFortuneImage();
   }
 }
 
@@ -41,7 +40,7 @@ interface FortuneImageMachineInterface {
   selectOption(option: string): void;
   addTicket(): void;
   pushButton(): void;
-  getFortuneImage(): void;
+  getFortuneImage(): Promise<string>;
 }
 
 class FortuneImageMachineState implements FortuneImageMachineInterface {
@@ -51,102 +50,104 @@ class FortuneImageMachineState implements FortuneImageMachineInterface {
     this.machine = machine;
   }
 
-  selectOption(option: string): void {
+  selectOption(option: string): string {
     throw Error("Override in subclass");
   }
 
-  addTicket(): void {
+  addTicket(): string {
     throw Error("Override in subclass");
   }
 
-  pushButton(): void {
+  pushButton(): string {
     throw Error("Override in subclass");
   }
 
-  getFortuneImage() {
+  getFortuneImage(): Promise<string> {
     throw Error("Override in subclass");
   }
 }
 
 class HasTicketState extends FortuneImageMachineState {
-  selectOption(option: string): void {
+  selectOption(option: string): string {
     this.machine.selectedOption = option;
     this.machine.state = this.machine.optionSelectedState;
-    console.log("Option selected: ", option);
+    return "Option selected: " + option
   }
 
-  addTicket(): void {
+  addTicket(): string {
     this.machine.tickets += 1;
-    console.log("Ticket added");
+    return "Ticket added"
   }
 
-  pushButton(): void {
-    console.log("Select one of the options first");
+  pushButton(): string {
+    return "Select one of the options first"
   }
 
-  getFortuneImage() {
-    console.log("You need to use your ticket");
+  getFortuneImage(): Promise<string> {
+    return Promise.resolve("You need to use your ticket")
   }
 }
 
 class OptionSelectedState extends FortuneImageMachineState {
-  selectOption(option: string): void {
+  selectOption(option: string): string {
     this.machine.selectedOption = option;
-    console.log("Option changed: ", option);
+    return "Option changed: " + option
   }
 
-  addTicket(): void {
+  addTicket(): string {
     this.machine.tickets += 1;
-    console.log("Ticket added");
+    return "Ticket added"
   }
 
-  pushButton(): void {
+  pushButton(): string {
     this.machine.tickets -= 1;
 
     this.machine.state = this.machine.ticketUsedState;
+    this.machine.getFortuneImage();
+    return "Button pushed"
   }
 }
 
 class NoTicketState extends FortuneImageMachineState {
-  selectOption(option: string): void {
-    console.log("You have to have a ticket to select an option");
+  selectOption(option: string): string {
+    return "You have to have a ticket to select an option"
   }
 
-  addTicket(): void {
+  addTicket(): string {
     this.machine.tickets += 1;
     this.machine.state = this.machine.hasTicketState;
-    console.log("Ticket added");
+    return "Ticket added"
   }
 
-  pushButton(): void {
-    console.log("Cannot push button without selected option");
+  pushButton(): string {
+    return "Cannot push button without selected option"
   }
 
-  getFortuneImage(): void {
-    console.log("You need a ticket to get a fortune image");
+  getFortuneImage(): Promise<string> {
+    return Promise.resolve("You need a ticket to get a fortune image")
   }
 }
 
 class TicketUsedState extends FortuneImageMachineState {
-  selectOption(option: string): void {
-    console.log("We are retrieving your fortune image for you at the moment");
+  selectOption(option: string): string {
+    return "We are retrieving your fortune image for you at the moment"
   }
-  addTicket(): void {
+  addTicket(): string {
     this.machine.tickets += 1;
     this.machine.state = this.machine.hasTicketState;
-    console.log("Ticket added");
+    return "Ticket added"
   }
 
-  pushButton(): void {
-    console.log("You can only get one image for one ticket");
+  pushButton(): string {
+    return "You can only get one image for one ticket"
   }
 
-  getFortuneImage(): void {
+  getFortuneImage(): Promise<string> {
     // do request with the selected option
     // update page with img element with this src
     // `https://source.unsplash.com/random?${this.machine.selectedOption}`
 
-    fetch(`https://source.unsplash.com/random?${this.machine.selectedOption}`)
+    return fetch(`https://source.unsplash.com/random?${this.machine.selectedOption}`)
       .then((result) => {
         if (result.ok) {
           // console.log(result.url)
@@ -159,30 +160,19 @@ class TicketUsedState extends FortuneImageMachineState {
       .then((body) => {
         // console.log(body)
         // if request successfull
-        console.log(`Got fortune image: ${body}`);
         this.machine.selectedOption = null;
         console.log(`Tickets left: ${this.machine.tickets}`);
         this.machine.state =
           this.machine.tickets > 0
             ? this.machine.hasTicketState
             : this.machine.noTicketState;
+        return `Got fortune image: ${body}`
       })
       .catch((error) => {
         console.log(error);
         // if there was some error handling
         this.machine.tickets += 1;
-        console.log(
-          "Getting fortune image failed, giving you your ticket back"
-        );
+        return "Getting fortune image failed, giving you your ticket back"
       });
   }
 }
-
-function run() {
-  const machine = new FortuneImageMachine();
-  machine.addTicket();
-  machine.selectOption("dog");
-  machine.pushButton(); // this is async so
-}
-
-run();

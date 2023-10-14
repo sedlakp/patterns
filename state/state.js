@@ -1,3 +1,4 @@
+"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -13,6 +14,8 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FortuneImageMachine = void 0;
 var OPTIONS = ["dog", "cat", "bird", "panda"];
 var FortuneImageMachine = /** @class */ (function () {
     function FortuneImageMachine() {
@@ -25,21 +28,21 @@ var FortuneImageMachine = /** @class */ (function () {
         this.state = this.noTicketState;
     }
     FortuneImageMachine.prototype.selectOption = function (option) {
-        this.state.selectOption(option);
+        return this.state.selectOption(option);
     };
     FortuneImageMachine.prototype.addTicket = function () {
-        this.state.addTicket();
+        return this.state.addTicket();
     };
     FortuneImageMachine.prototype.pushButton = function () {
-        this.state.pushButton();
-        this.getFortuneImage();
+        return this.state.pushButton();
     };
     FortuneImageMachine.prototype.getFortuneImage = function () {
-        this.state.getFortuneImage();
+        return this.state.getFortuneImage();
     };
     FortuneImageMachine.Options = OPTIONS;
     return FortuneImageMachine;
 }());
+exports.FortuneImageMachine = FortuneImageMachine;
 var FortuneImageMachineState = /** @class */ (function () {
     function FortuneImageMachineState(machine) {
         this.machine = machine;
@@ -66,17 +69,17 @@ var HasTicketState = /** @class */ (function (_super) {
     HasTicketState.prototype.selectOption = function (option) {
         this.machine.selectedOption = option;
         this.machine.state = this.machine.optionSelectedState;
-        console.log("Option selected: ", option);
+        return "Option selected: " + option;
     };
     HasTicketState.prototype.addTicket = function () {
         this.machine.tickets += 1;
-        console.log("Ticket added");
+        return "Ticket added";
     };
     HasTicketState.prototype.pushButton = function () {
-        console.log("Select one of the options first");
+        return "Select one of the options first";
     };
     HasTicketState.prototype.getFortuneImage = function () {
-        console.log("You need to use your ticket");
+        return Promise.resolve("You need to use your ticket");
     };
     return HasTicketState;
 }(FortuneImageMachineState));
@@ -87,15 +90,17 @@ var OptionSelectedState = /** @class */ (function (_super) {
     }
     OptionSelectedState.prototype.selectOption = function (option) {
         this.machine.selectedOption = option;
-        console.log("Option changed: ", option);
+        return "Option changed: " + option;
     };
     OptionSelectedState.prototype.addTicket = function () {
         this.machine.tickets += 1;
-        console.log("Ticket added");
+        return "Ticket added";
     };
     OptionSelectedState.prototype.pushButton = function () {
         this.machine.tickets -= 1;
         this.machine.state = this.machine.ticketUsedState;
+        this.machine.getFortuneImage();
+        return "Button pushed";
     };
     return OptionSelectedState;
 }(FortuneImageMachineState));
@@ -105,18 +110,18 @@ var NoTicketState = /** @class */ (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     NoTicketState.prototype.selectOption = function (option) {
-        console.log("You have to have a ticket to select an option");
+        return "You have to have a ticket to select an option";
     };
     NoTicketState.prototype.addTicket = function () {
         this.machine.tickets += 1;
         this.machine.state = this.machine.hasTicketState;
-        console.log("Ticket added");
+        return "Ticket added";
     };
     NoTicketState.prototype.pushButton = function () {
-        console.log("Cannot push button without selected option");
+        return "Cannot push button without selected option";
     };
     NoTicketState.prototype.getFortuneImage = function () {
-        console.log("You need a ticket to get a fortune image");
+        return Promise.resolve("You need a ticket to get a fortune image");
     };
     return NoTicketState;
 }(FortuneImageMachineState));
@@ -126,22 +131,22 @@ var TicketUsedState = /** @class */ (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     TicketUsedState.prototype.selectOption = function (option) {
-        console.log("We are retrieving your fortune image for you at the moment");
+        return "We are retrieving your fortune image for you at the moment";
     };
     TicketUsedState.prototype.addTicket = function () {
         this.machine.tickets += 1;
         this.machine.state = this.machine.hasTicketState;
-        console.log("Ticket added");
+        return "Ticket added";
     };
     TicketUsedState.prototype.pushButton = function () {
-        console.log("You can only get one image for one ticket");
+        return "You can only get one image for one ticket";
     };
     TicketUsedState.prototype.getFortuneImage = function () {
         // do request with the selected option
         // update page with img element with this src
         // `https://source.unsplash.com/random?${this.machine.selectedOption}`
         var _this = this;
-        fetch("https://source.unsplash.com/random?".concat(this.machine.selectedOption))
+        return fetch("https://source.unsplash.com/random?".concat(this.machine.selectedOption))
             .then(function (result) {
             if (result.ok) {
                 // console.log(result.url)
@@ -155,27 +160,20 @@ var TicketUsedState = /** @class */ (function (_super) {
             .then(function (body) {
             // console.log(body)
             // if request successfull
-            console.log("Got fortune image: ".concat(body));
             _this.machine.selectedOption = null;
             console.log("Tickets left: ".concat(_this.machine.tickets));
             _this.machine.state =
                 _this.machine.tickets > 0
                     ? _this.machine.hasTicketState
                     : _this.machine.noTicketState;
+            return "Got fortune image: ".concat(body);
         })
             .catch(function (error) {
             console.log(error);
             // if there was some error handling
             _this.machine.tickets += 1;
-            console.log("Getting fortune image failed, giving you your ticket back");
+            return "Getting fortune image failed, giving you your ticket back";
         });
     };
     return TicketUsedState;
 }(FortuneImageMachineState));
-function run() {
-    var machine = new FortuneImageMachine();
-    machine.addTicket();
-    machine.selectOption("dog");
-    machine.pushButton(); // this is async so
-}
-run();
